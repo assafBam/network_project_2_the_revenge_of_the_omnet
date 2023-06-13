@@ -523,38 +523,31 @@ def print_graphs(filename, training=False, num_epochs=20, steps_per_epoch=2000, 
 
 
 if __name__ == '__main__':
-    # # Generate the datasets
-    # print("Generating training dataset...")
-    # # for i in range(6, 16):
-    # #     filename = f"training/graphs/graph_{i}.txt"
-    # #     generate_topology(i, filename)
-    # trainer = RouteNetTrainer("dataset1", "graph_pre_made.txt")
-    # # for i in range(6, 16):
-    # #     filename = os.path.join(trainer.training_dataset_path, trainer.graphs_path, f"graph_{i}.txt")
-    # #     trainer.generate_topology(i, filename)
-    # trainer.write_config()
-    # trainer.generate_file(1000)
-    # trainer.start_docker()
-    # print("Generating DONE")
+    # Generate the datasets
+    print("Generating training dataset...")
+    trainer = RouteNetTrainer("dataset1", "graph_pre_made.txt")
+    trainer.write_config()
+    trainer.generate_file(1000)
+    trainer.start_docker()
+    print("Generating DONE")
 
-    # # Train the model
-    # train("./training/results/dataset1")
-    # # routenetMain("./training/results/dataset1")
-    # print("TRAINING DONE")
+    print("Generating validation dataset...")
+    trainer = RouteNetTrainer("dataset2", "graph_pre_made.txt")
+    trainer.write_config()
+    trainer.generate_file(200)
+    trainer.start_docker()
+    print("Generating DONE")
 
-    # print("Generating validation dataset...")
-    # trainer = RouteNetTrainer("dataset2", "graph_pre_made.txt")
-    # trainer.write_config()
-    # trainer.generate_file(200)
-    # trainer.start_docker()
-    # print("Generating DONE")
-
+    # Train the model
+    train("./training/results/dataset1")
+    # routenetMain("./training/results/dataset1")
+    print("TRAINING DONE")
 
     # evaluate('modelCheckpoints/20-0.32')
     # print("EVALUATE DONE")
 
-    print_graphs("train_loss_values_mean.txt", training=True, num_epochs=20, steps_per_epoch=2000, valid_steps=20)
-    print_graphs("validate_loss_values_mean.txt")
+    # print_graphs("train_loss_values_mean.txt", training=True, num_epochs=20, steps_per_epoch=2000, valid_steps=20)
+    # print_graphs("validate_loss_values_mean.txt")
 
     # evaluate("modelCheckpoints_10000samples_longTraining/90-80.72")
     # print_graphs("train_loss_values_mean_10000_long.txt", training=True, num_epochs=90, steps_per_epoch=4000, valid_steps=40)
