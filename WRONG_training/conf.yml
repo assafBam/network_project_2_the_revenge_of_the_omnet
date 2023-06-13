@@ -1,0 +1,4 @@
+dataset_name: dataset2
+rm_prev_results: y
+samples_per_file: 10
+threads: 6

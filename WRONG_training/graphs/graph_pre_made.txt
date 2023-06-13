@@ -1,0 +1,162 @@
+graph [
+  levelsToS 2
+  node [
+    id 0
+    label "0"
+    schedulingPolicy "SP"
+    tosToQoSqueue "0;1"
+    bufferSizes 32000
+  ]
+  node [
+    id 1
+    label "1"
+    schedulingPolicy "SP"
+    tosToQoSqueue "0;1"
+    bufferSizes 32000
+  ]
+  node [
+    id 2
+    label "2"
+    schedulingPolicy "SP"
+    tosToQoSqueue "0;1"
+    bufferSizes 32000
+  ]
+  node [
+    id 3
+    label "3"
+    schedulingPolicy "SP"
+    tosToQoSqueue "0;1"
+    bufferSizes 32000
+  ]
+  node [
+    id 4
+    label "4"
+    schedulingPolicy "SP"
+    tosToQoSqueue "0;1"
+    bufferSizes 32000
+  ]
+  node [
+    id 5
+    label "5"
+    schedulingPolicy "SP"
+    tosToQoSqueue "0;1"
+    bufferSizes 32000
+  ]
+  node [
+    id 6
+    label "6"
+    schedulingPolicy "SP"
+    tosToQoSqueue "0;1"
+    bufferSizes 32000
+  ]
+  node [
+    id 7
+    label "7"
+    schedulingPolicy "SP"
+    tosToQoSqueue "0;1"
+    bufferSizes 32000
+  ]
+  node [
+    id 8
+    label "8"
+    schedulingPolicy "SP"
+    tosToQoSqueue "0;1"
+    bufferSizes 32000
+  ]
+  node [
+    id 9
+    label "9"
+    schedulingPolicy "SP"
+    tosToQoSqueue "0;1"
+    bufferSizes 32000
+  ]
+  node [
+    id 10
+    label "10"
+    schedulingPolicy "SP"
+    tosToQoSqueue "0;1"
+    bufferSizes 32000
+  ]
+  node [
+    id 11
+    label "11"
+    schedulingPolicy "SP"
+    tosToQoSqueue "0;1"
+    bufferSizes 32000
+  ]
+  edge [
+    source 0
+    target 3
+    bandwidth 100000
+  ]
+  edge [
+    source 0
+    target 6
+    bandwidth 100000
+  ]
+  edge [
+    source 0
+    target 7
+    bandwidth 100000
+  ]
+  edge [
+    source 1
+    target 5
+    bandwidth 100000
+  ]
+  edge [
+    source 1
+    target 6
+    bandwidth 100000
+  ]
+  edge [
+    source 1
+    target 9
+    bandwidth 100000
+  ]
+  edge [
+    source 2
+    target 8
+    bandwidth 100000
+  ]
+  edge [
+    source 2
+    target 10
+    bandwidth 100000
+  ]
+  edge [
+    source 3
+    target 5
+    bandwidth 100000
+  ]
+  edge [
+    source 4
+    target 7
+    bandwidth 100000
+  ]
+  edge [
+    source 4
+    target 8
+    bandwidth 100000
+  ]
+  edge [
+    source 4
+    target 10
+    bandwidth 100000
+  ]
+  edge [
+    source 5
+    target 11
+    bandwidth 100000
+  ]
+  edge [
+    source 8
+    target 10
+    bandwidth 100000
+  ]
+  edge [
+    source 9
+    target 11
+    bandwidth 100000
+  ]
+]
