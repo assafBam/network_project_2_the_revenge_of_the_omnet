@@ -543,8 +543,8 @@ if __name__ == '__main__':
     # # routenetMain("./training/results/dataset1")
     # print("TRAINING DONE")
 
-    # evaluate('modelCheckpoints/20-0.32')
-    # print("EVALUATE DONE")
+    evaluate('modelCheckpoints/20-0.32')
+    print("EVALUATE DONE")
 
     print_graphs("train_loss_values_mean.txt", training=True, num_epochs=20, steps_per_epoch=2000, valid_steps=20)
     print_graphs("validate_loss_values_mean.txt")

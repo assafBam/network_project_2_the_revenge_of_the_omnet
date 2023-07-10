@@ -10,6 +10,7 @@ tf.get_logger().setLevel('INFO')
 
 from RouteNet_Fermi.datanetAPI import DatanetAPI  # This API may be different for different versions of the dataset
 import RouteNet_Fermi.data_generator as data_generator
+from RouteNet_Fermi.data_generator import input_fn
 
 """
 def hypergraph_to_input_data(HG):
@@ -128,23 +129,147 @@ def change_dtypes(input_dict):
 
     return input_dict
 
+def get_delay(loss_object):
+    def delays(y_true, y_pred):
+        # loss_value = 100 * abs((y_true - y_pred) / y_true)
+        with open("delays.txt", "w"):
+            print(y_pred)
+            tf.print(y_pred, summarize=-1, output_stream="file://delays.txt")
+        return loss_object(y_true, y_pred)
+    return delays
 
-def test_model(checkpoint):
-    model = trainer.RouteNet_Fermi()
-    model.load_weights(checkpoint)
 
-    graph = nx.DiGraph(nx.read_gml("graph.txt"))
-    # inputs = hypergraph_to_input_data(graph)
+def test_model(checkpoint, number_of_nodes=12):
     data_dir = "training/results/dataset2"
-    gen = data_generator.generator(data_dir=data_dir, shuffle=False, seed=1234, training=False)
-    inputs = change_dtypes(next(gen)[0])
-    # inputs = data_generator.input_fn(data_dir, shuffle=False)
-    print(inputs)
+    ds_test = input_fn(data_dir, shuffle=False)
+    ds_test = ds_test.prefetch(tf.data.experimental.AUTOTUNE)
+    model = trainer.RouteNet_Fermi()
+    optimizer = tf.keras.optimizers.Adam(learning_rate=0.005)
 
-    output = model.call(inputs)
-    print("The output is:")
-    print(output)
+    loss_object = tf.keras.losses.MeanAbsolutePercentageError()
+
+    model.compile(loss=get_delay(loss_object),
+                  optimizer=optimizer,
+                  run_eagerly=False)
+    model.load_weights(checkpoint)
+    model.evaluate(ds_test)
+    with open("delays.txt", "r") as file:
+        lines = file.readlines()
+    mean_delay = []
+    for line in lines:
+        list_of_delays = eval(line.replace(" ", ","))
+        index = 0
+        delay_matrix = []
+        for src in range(number_of_nodes):
+            delays_to_dsts = []
+            for dst in range(number_of_nodes):
+                if src == dst:
+                    delays_to_dsts.append(0)
+                else:
+                    delays_to_dsts.append(list_of_delays[index])  # TODO: check this
+                    index += 1
+            delay_matrix.append(delays_to_dsts)
+            # print(src, str(delays_to_dsts))
+            # delays_with_load.append(delays_to_dsts)
+        mean_delay.append(np.array(delay_matrix))
+
+    result = sum(mean_delay) / len(mean_delay)
+    print(result)
+
+
+
+
+    new_model = trainer.RouteNet_Fermi()
+    optimizer = tf.keras.optimizers.Adam(learning_rate=0.005)
+
+    loss_object = tf.keras.losses.MeanAbsolutePercentageError()
+
+    new_model.compile(loss=get_delay(loss_object),
+                  optimizer=optimizer,
+                  run_eagerly=False)
+    # new_model.load_weights(checkpoint)
+    new_model.evaluate(ds_test)
+    with open("delays.txt", "r") as file:
+        lines = file.readlines()
+    mean_delay = []
+    for line in lines:
+        list_of_delays = eval(line.replace(" ", ","))
+        index = 0
+        delay_matrix = []
+        for src in range(number_of_nodes):
+            delays_to_dsts = []
+            for dst in range(number_of_nodes):
+                if src == dst:
+                    delays_to_dsts.append(0)
+                else:
+                    delays_to_dsts.append(list_of_delays[index])  # TODO: check this
+                    index += 1
+            delay_matrix.append(delays_to_dsts)
+            # print(src, str(delays_to_dsts))
+            # delays_with_load.append(delays_to_dsts)
+        mean_delay.append(np.array(delay_matrix))
+
+    new_result = sum(mean_delay) / len(mean_delay)
+    print(new_result)
+
+
+
+    # graph = nx.DiGraph(nx.read_gml("training/graphs/graph_pre_made.txt"))
+    # # inputs = hypergraph_to_input_data(graph)
+    # gen = data_generator.generator(data_dir=data_dir, shuffle=False, seed=1234, training=False)
+    # inputs = change_dtypes(next(gen)[0])
+    # # inputs = data_generator.input_fn(data_dir, shuffle=False)
+    # print(inputs)
+    #
+    # output1 = model.call(inputs)
+    # print("The output is:")
+    # print("\t", list(range(number_of_nodes)))
+    # index = 0
+    # delays_without_load = []
+    # for src in range(number_of_nodes):
+    #     delays_to_dsts = []
+    #     for dst in range(number_of_nodes):
+    #         if src == dst:
+    #             delays_to_dsts.append(None)
+    #         else:
+    #             delays_to_dsts.append(output1[index].numpy()[0])  # TODO: check this
+    #             index += 1
+    #     print(src, str(delays_to_dsts))
+    #     delays_without_load.append(delays_to_dsts)
+    #
+    # model2 = trainer.RouteNet_Fermi()
+    # model2.compile(loss=get_delay(loss_object),
+    #               optimizer=optimizer,
+    #               run_eagerly=False)
+    # # model2.load_weights(checkpoint)
+    # output2 = model2.call(inputs)
+    #
+    # index = 0
+    # delays_with_load = []
+    # for src in range(number_of_nodes):
+    #     delays_to_dsts = []
+    #     for dst in range(number_of_nodes):
+    #         if src == dst:
+    #             delays_to_dsts.append(None)
+    #         else:
+    #             delays_to_dsts.append(output2[index].numpy()[0])  # TODO: check this
+    #             index += 1
+    #     print(src, str(delays_to_dsts))
+    #     delays_with_load.append(delays_to_dsts)
+    #
+    # sum = 0
+    # for i in range(len(delays_with_load)):
+    #     for j in range(len(delays_with_load)):
+    #        if delays_with_load[i][j] and delays_with_load[i][j] > delays_without_load[i][j]:
+    #            sum += 1
+    #        else:
+    #            print("src is", i, "dst is", j)
+    #
+    # print("sum is", sum)
+    # # print(np.sum(output2 > output1))
+    # # print(output)
 
 
 if __name__ == '__main__':
-    test_model('checkpoints/modelCheckpoints_10000samples_good_result/20-0.60')
+    # test_model('checkpoints/modelCheckpoints_10000samples_good_result/20-0.60')
+    test_model("modelCheckpoints/20-0.32")
