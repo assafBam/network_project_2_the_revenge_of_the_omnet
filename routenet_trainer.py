@@ -543,13 +543,21 @@ if __name__ == '__main__':
     # # routenetMain("./training/results/dataset1")
     # print("TRAINING DONE")
 
-    evaluate('modelCheckpoints/20-0.32')
-    print("EVALUATE DONE")
-
-    print_graphs("train_loss_values_mean.txt", training=True, num_epochs=20, steps_per_epoch=2000, valid_steps=20)
-    print_graphs("validate_loss_values_mean.txt")
+    # evaluate('modelCheckpoints/20-0.32')
+    # print("EVALUATE DONE")
+    #
+    # print_graphs("train_loss_values_mean.txt", training=True, num_epochs=20, steps_per_epoch=2000, valid_steps=20)
+    # print_graphs("validate_loss_values_mean.txt")
 
     # evaluate("modelCheckpoints_10000samples_longTraining/90-80.72")
     # print_graphs("train_loss_values_mean_10000_long.txt", training=True, num_epochs=90, steps_per_epoch=4000, valid_steps=40)
     # print_graphs("validate_loss_values_mean.txt")
+
+
+    print("Generating dataset3")
+    trainer = RouteNetTrainer("dataset3", "graph_pre_made.txt")
+    trainer.write_config()
+    trainer.generate_file(1)
+    trainer.start_docker()
+    print("Generating DONE")
 

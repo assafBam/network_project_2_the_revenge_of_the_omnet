@@ -11,6 +11,7 @@ tf.get_logger().setLevel('INFO')
 from RouteNet_Fermi.datanetAPI import DatanetAPI  # This API may be different for different versions of the dataset
 import RouteNet_Fermi.data_generator as data_generator
 from RouteNet_Fermi.data_generator import input_fn
+import datanetAPI
 
 """
 def hypergraph_to_input_data(HG):
@@ -140,102 +141,114 @@ def get_delay(loss_object):
 
 
 def test_model(checkpoint, number_of_nodes=12):
-    data_dir = "training/results/dataset2"
+    # data_dir = "training/results/dataset2"
+    # ds_test = input_fn(data_dir, shuffle=False)
+    # ds_test = ds_test.prefetch(tf.data.experimental.AUTOTUNE)
+    # model = trainer.RouteNet_Fermi()
+    # optimizer = tf.keras.optimizers.Adam(learning_rate=0.005)
+    #
+    # loss_object = tf.keras.losses.MeanAbsolutePercentageError()
+    #
+    # model.compile(loss=get_delay(loss_object),
+    #               optimizer=optimizer,
+    #               run_eagerly=False)
+    # model.load_weights(checkpoint)
+    # model.evaluate(ds_test)
+    # with open("delays.txt", "r") as file:
+    #     lines = file.readlines()
+    # mean_delay = []
+    # for line in lines:
+    #     list_of_delays = eval(line.replace(" ", ","))
+    #     index = 0
+    #     delay_matrix = []
+    #     for src in range(number_of_nodes):
+    #         delays_to_dsts = []
+    #         for dst in range(number_of_nodes):
+    #             if src == dst:
+    #                 delays_to_dsts.append(0)
+    #             else:
+    #                 delays_to_dsts.append(list_of_delays[index])  # TODO: check this
+    #                 index += 1
+    #         delay_matrix.append(delays_to_dsts)
+    #         # print(src, str(delays_to_dsts))
+    #         # delays_with_load.append(delays_to_dsts)
+    #     mean_delay.append(np.array(delay_matrix))
+    #
+    # result = sum(mean_delay) / len(mean_delay)
+    # print(result)
+    #
+    #
+    #
+    #
+    # new_model = trainer.RouteNet_Fermi()
+    # optimizer = tf.keras.optimizers.Adam(learning_rate=0.005)
+    #
+    # loss_object = tf.keras.losses.MeanAbsolutePercentageError()
+    #
+    # new_model.compile(loss=get_delay(loss_object),
+    #               optimizer=optimizer,
+    #               run_eagerly=False)
+    # # new_model.load_weights(checkpoint)
+    # new_model.evaluate(ds_test)
+    # with open("delays.txt", "r") as file:
+    #     lines = file.readlines()
+    # mean_delay = []
+    # for line in lines:
+    #     list_of_delays = eval(line.replace(" ", ","))
+    #     index = 0
+    #     delay_matrix = []
+    #     for src in range(number_of_nodes):
+    #         delays_to_dsts = []
+    #         for dst in range(number_of_nodes):
+    #             if src == dst:
+    #                 delays_to_dsts.append(0)
+    #             else:
+    #                 delays_to_dsts.append(list_of_delays[index])  # TODO: check this
+    #                 index += 1
+    #         delay_matrix.append(delays_to_dsts)
+    #         # print(src, str(delays_to_dsts))
+    #         # delays_with_load.append(delays_to_dsts)
+    #     mean_delay.append(np.array(delay_matrix))
+    #
+    # new_result = sum(mean_delay) / len(mean_delay)
+    # print(new_result)
+
+
+    data_dir = "training/results/dataset3"  # TODO: change dataset back to 2
     ds_test = input_fn(data_dir, shuffle=False)
     ds_test = ds_test.prefetch(tf.data.experimental.AUTOTUNE)
     model = trainer.RouteNet_Fermi()
-    optimizer = tf.keras.optimizers.Adam(learning_rate=0.005)
-
-    loss_object = tf.keras.losses.MeanAbsolutePercentageError()
-
-    model.compile(loss=get_delay(loss_object),
-                  optimizer=optimizer,
-                  run_eagerly=False)
     model.load_weights(checkpoint)
-    model.evaluate(ds_test)
-    with open("delays.txt", "r") as file:
-        lines = file.readlines()
-    mean_delay = []
-    for line in lines:
-        list_of_delays = eval(line.replace(" ", ","))
-        index = 0
-        delay_matrix = []
-        for src in range(number_of_nodes):
-            delays_to_dsts = []
-            for dst in range(number_of_nodes):
-                if src == dst:
-                    delays_to_dsts.append(0)
-                else:
-                    delays_to_dsts.append(list_of_delays[index])  # TODO: check this
-                    index += 1
-            delay_matrix.append(delays_to_dsts)
-            # print(src, str(delays_to_dsts))
-            # delays_with_load.append(delays_to_dsts)
-        mean_delay.append(np.array(delay_matrix))
+    graph = nx.DiGraph(nx.read_gml("training/graphs/graph_pre_made.txt"))
+    # inputs = hypergraph_to_input_data(graph)
+    gen = data_generator.generator(data_dir=data_dir, shuffle=False, seed=1234, training=False)
+    inputs = change_dtypes(next(gen)[0])
+    # inputs = data_generator.input_fn(data_dir, shuffle=False)
+    print(inputs)
 
-    result = sum(mean_delay) / len(mean_delay)
-    print(result)
+    # for t in range(3):
+    #     print("Try number", t)
+    #     print(model.call(inputs))
+    #     print("=================")
 
-
-
-
-    new_model = trainer.RouteNet_Fermi()
-    optimizer = tf.keras.optimizers.Adam(learning_rate=0.005)
-
-    loss_object = tf.keras.losses.MeanAbsolutePercentageError()
-
-    new_model.compile(loss=get_delay(loss_object),
-                  optimizer=optimizer,
-                  run_eagerly=False)
-    # new_model.load_weights(checkpoint)
-    new_model.evaluate(ds_test)
-    with open("delays.txt", "r") as file:
-        lines = file.readlines()
-    mean_delay = []
-    for line in lines:
-        list_of_delays = eval(line.replace(" ", ","))
-        index = 0
-        delay_matrix = []
-        for src in range(number_of_nodes):
-            delays_to_dsts = []
-            for dst in range(number_of_nodes):
-                if src == dst:
-                    delays_to_dsts.append(0)
-                else:
-                    delays_to_dsts.append(list_of_delays[index])  # TODO: check this
-                    index += 1
-            delay_matrix.append(delays_to_dsts)
-            # print(src, str(delays_to_dsts))
-            # delays_with_load.append(delays_to_dsts)
-        mean_delay.append(np.array(delay_matrix))
-
-    new_result = sum(mean_delay) / len(mean_delay)
-    print(new_result)
-
-
-
-    # graph = nx.DiGraph(nx.read_gml("training/graphs/graph_pre_made.txt"))
-    # # inputs = hypergraph_to_input_data(graph)
-    # gen = data_generator.generator(data_dir=data_dir, shuffle=False, seed=1234, training=False)
-    # inputs = change_dtypes(next(gen)[0])
-    # # inputs = data_generator.input_fn(data_dir, shuffle=False)
-    # print(inputs)
-    #
-    # output1 = model.call(inputs)
-    # print("The output is:")
-    # print("\t", list(range(number_of_nodes)))
-    # index = 0
-    # delays_without_load = []
-    # for src in range(number_of_nodes):
-    #     delays_to_dsts = []
-    #     for dst in range(number_of_nodes):
-    #         if src == dst:
-    #             delays_to_dsts.append(None)
-    #         else:
-    #             delays_to_dsts.append(output1[index].numpy()[0])  # TODO: check this
-    #             index += 1
-    #     print(src, str(delays_to_dsts))
-    #     delays_without_load.append(delays_to_dsts)
+    output1 = model.call(inputs)
+    print("The output is:")
+    print("\t", list(range(number_of_nodes)))
+    index = 0
+    delays_without_load = []
+    for src in range(number_of_nodes):
+        delays_to_dsts = []
+        for dst in range(number_of_nodes):
+            if src == dst:
+                # delays_to_dsts.append(None)
+                continue
+            else:
+                delays_to_dsts.append(output1[index].numpy()[0])  # TODO: check this
+                index += 1
+        print(src, str(delays_to_dsts))
+        delays_without_load.append(delays_to_dsts)
+    final_result = np.median(delays_without_load, axis=0)
+    return delays_without_load
     #
     # model2 = trainer.RouteNet_Fermi()
     # model2.compile(loss=get_delay(loss_object),
@@ -269,7 +282,60 @@ def test_model(checkpoint, number_of_nodes=12):
     # # print(np.sum(output2 > output1))
     # # print(output)
 
+def get_mean_delay_from_omnet():
+    data_folder_name = "training"
+    src_path = f"{data_folder_name}/results/dataset3/"
+    max_avg_lambda_range = [10, 1000]
+    net_size_lst = [12]
+    reader = datanetAPI.DatanetAPI(src_path,max_avg_lambda_range, net_size_lst)
+
+    samples_lst = []
+    for sample in reader:
+        samples_lst.append(sample)
+    print("Number of selected samples: ", len(samples_lst))
+
+    delays_lst = []
+    for s in samples_lst:
+        performance_matrix = s.get_performance_matrix()
+        delays_lst_per_sample = []
+        for i in range(s.get_network_size()):
+            for j in range(s.get_network_size()):
+                if (i == j):
+                    continue
+                # Append to the list the average delay of the path i,j.
+                delays_lst_per_sample.append(performance_matrix[i, j]["AggInfo"]["AvgDelay"])
+        delays_lst.append([np.array(delays_lst_per_sample)])
+        # print(delays_lst_per_sample)
+
+    final_result = np.median(delays_lst, axis=0)
+    # print("===== Final result is =====")
+    # print(final_result)
+    return final_result
+
 
 if __name__ == '__main__':
     # test_model('checkpoints/modelCheckpoints_10000samples_good_result/20-0.60')
-    test_model("modelCheckpoints/20-0.32")
+    routenet_delay = test_model("modelCheckpoints/20-0.32")
+    omnet_delay = get_mean_delay_from_omnet()
+
+    print("=================")
+    print("Routenet Delay:")
+    print(np.array(routenet_delay))
+    print("=================")
+    print("Omnet Delay:")
+    print(omnet_delay)
+A
+    diff_list = []
+    index = 0
+    for delays_list in routenet_delay:
+        for delay in delays_list:
+            diff_list.append(delay - omnet_delay[0][index])
+            index += 1
+
+    print("=================")
+    print("Diff list is:")
+    print(diff_list)
+    print("=================")
+    print("AVG diff is:")
+    print(np.average(np.abs(diff_list)))
+
