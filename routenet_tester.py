@@ -5,6 +5,7 @@ import warnings
 warnings.filterwarnings("ignore")
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+os.environ["KMP_DUPLICATE_LIB_OK"]="TRUE"
 import tensorflow as tf
 tf.get_logger().setLevel('INFO')
 
@@ -12,6 +13,7 @@ from RouteNet_Fermi.datanetAPI import DatanetAPI  # This API may be different fo
 import RouteNet_Fermi.data_generator as data_generator
 from RouteNet_Fermi.data_generator import input_fn
 import datanetAPI
+import matplotlib.pyplot as plt
 
 """
 def hypergraph_to_input_data(HG):
@@ -214,7 +216,7 @@ def test_model(checkpoint, number_of_nodes=12):
     # print(new_result)
 
 
-    data_dir = "training/results/dataset3"  # TODO: change dataset back to 2
+    data_dir = "training/results/1000_avgBW"  # TODO: change dataset back to 2
     ds_test = input_fn(data_dir, shuffle=False)
     ds_test = ds_test.prefetch(tf.data.experimental.AUTOTUNE)
     model = trainer.RouteNet_Fermi()
@@ -240,8 +242,8 @@ def test_model(checkpoint, number_of_nodes=12):
         delays_to_dsts = []
         for dst in range(number_of_nodes):
             if src == dst:
-                # delays_to_dsts.append(None)
-                continue
+                delays_to_dsts.append(0)
+                # continue
             else:
                 delays_to_dsts.append(output1[index].numpy()[0])  # TODO: check this
                 index += 1
@@ -284,8 +286,9 @@ def test_model(checkpoint, number_of_nodes=12):
 
 def get_mean_delay_from_omnet():
     data_folder_name = "training"
-    src_path = f"{data_folder_name}/results/dataset3/"
-    max_avg_lambda_range = [10, 1000]
+    src_path = f"{data_folder_name}/results/1000_avgBW/"
+    # max_avg_lambda_range = [10, 1000]
+    max_avg_lambda_range = [1000]
     net_size_lst = [12]
     reader = datanetAPI.DatanetAPI(src_path,max_avg_lambda_range, net_size_lst)
 
@@ -301,9 +304,11 @@ def get_mean_delay_from_omnet():
         for i in range(s.get_network_size()):
             for j in range(s.get_network_size()):
                 if (i == j):
-                    continue
-                # Append to the list the average delay of the path i,j.
-                delays_lst_per_sample.append(performance_matrix[i, j]["AggInfo"]["AvgDelay"])
+                    # continue
+                    delays_lst_per_sample.append(0)
+                else:
+                    # Append to the list the average delay of the path i,j.
+                    delays_lst_per_sample.append(performance_matrix[i, j]["AggInfo"]["AvgDelay"])
         delays_lst.append([np.array(delays_lst_per_sample)])
         # print(delays_lst_per_sample)
 
@@ -324,7 +329,7 @@ if __name__ == '__main__':
     print("=================")
     print("Omnet Delay:")
     print(omnet_delay)
-A
+
     diff_list = []
     index = 0
     for delays_list in routenet_delay:
@@ -338,4 +343,30 @@ A
     print("=================")
     print("AVG diff is:")
     print(np.average(np.abs(diff_list)))
+    routenet_delay = np.array(routenet_delay)
+    omnet_delay = omnet_delay[0].reshape(12, 12)
+    fig = plt.figure()
+    ax = fig.add_subplot(projection='3d')
+
+    # omnet = np.array([[0,1,2,3],[3,0,2,1],[2,3,0,1],[1,3,2,0]])
+    # routnet = np.array([[0,1.1,2.2,3.3],[3.1,0,2.2,1.3],[2.4,3.5,0,1.2],[1.1,3.2,2.3,0]])*0.0001
+    colors = ['r', 'b']
+
+    yticks = [11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0]
+    xticks = list(reversed(yticks))
+    xs = np.array([0,1,2,3,4,5,6,7,8,9,10,11])
+    ys = [0,1,2,3,4,5,6,7,8,9,10,11]
+    width = 0.25
+
+    for i in range(len(omnet_delay)):
+        ax.bar(xs, omnet_delay[i], zs=i, zdir='y', color='r', alpha=1, width=width)
+        ax.bar(xs+width, routenet_delay[i], zs=i, zdir='y', color='b', alpha=0.8, width=width)
+
+    ax.set_yticks(yticks)
+    ax.set_xticks(xticks)
+
+    ax.set_xlabel('src')
+    ax.set_ylabel('dst')
+    ax.set_zlabel('delay')
+    plt.show()
 

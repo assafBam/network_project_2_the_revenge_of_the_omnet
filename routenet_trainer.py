@@ -240,10 +240,14 @@ class RouteNetTrainer:
         tos_lst = [0, 1, 2]
         nodes = list(G.nodes)
 
+        avg_bw_dist = [1000, 10000, 25000, 50000, 75000, 100000, 200000]
+
         with open(traffic_file, "w") as tm_fd:
             for src in G:
                 for dst in G:
-                    avg_bw = random.randint(10, max_avg_lbda)
+                    # avg_bw = random.randint(10, max_avg_lbda)
+                    # avg_bw = 1000
+                    avg_bw = random.choice(avg_bw_dist)
                     td = random.choice(time_dist)
                     sd = random.choice(pkt_size_dist)
                     # tos = random.choice(tos_lst)
@@ -554,8 +558,8 @@ if __name__ == '__main__':
     # print_graphs("validate_loss_values_mean.txt")
 
 
-    print("Generating dataset3")
-    trainer = RouteNetTrainer("dataset3", "graph_pre_made.txt")
+    print("Generating new dataset")
+    trainer = RouteNetTrainer("1000_avgBW", "graph_pre_made.txt")
     trainer.write_config()
     trainer.generate_file(1)
     trainer.start_docker()
