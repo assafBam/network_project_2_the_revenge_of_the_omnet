@@ -86,45 +86,45 @@ class RouteNetTrainer:
             # Assign weights to each queue
             # G.nodes[n]["schedulingWeights"] = "60, 40"
             # Assign the buffer size of all the ports of the node
-            G.nodes[n]["bufferSizes"] = 32000
+            G.nodes[n]["bufferSizes"] = 8000
 
         G.add_edge(0, 3)
-        G[0][3]["bandwidth"] = 100000
+        G[0][3]["bandwidth"] = 10000
         G.add_edge(0, 6)
-        G[0][6]["bandwidth"] = 100000
+        G[0][6]["bandwidth"] = 10000
         G.add_edge(0, 7)
-        G[0][7]["bandwidth"] = 100000
+        G[0][7]["bandwidth"] = 10000
 
         G.add_edge(1, 5)
-        G[1][5]["bandwidth"] = 100000
+        G[1][5]["bandwidth"] = 10000
         G.add_edge(1, 6)
-        G[1][6]["bandwidth"] = 100000
+        G[1][6]["bandwidth"] = 10000
         G.add_edge(1, 9)
-        G[1][9]["bandwidth"] = 100000
+        G[1][9]["bandwidth"] = 10000
 
         G.add_edge(2, 8)
-        G[2][8]["bandwidth"] = 100000
+        G[2][8]["bandwidth"] = 10000
         G.add_edge(2, 10)
-        G[2][10]["bandwidth"] = 100000
+        G[2][10]["bandwidth"] = 10000
 
         G.add_edge(3, 5)
-        G[3][5]["bandwidth"] = 100000
+        G[3][5]["bandwidth"] = 10000
 
         G.add_edge(4, 7)
-        G[4][7]["bandwidth"] = 100000
+        G[4][7]["bandwidth"] = 10000
         G.add_edge(4, 8)
-        G[4][8]["bandwidth"] = 100000
+        G[4][8]["bandwidth"] = 10000
         G.add_edge(4, 10)
-        G[4][10]["bandwidth"] = 100000
+        G[4][10]["bandwidth"] = 10000
 
         G.add_edge(5, 11)
-        G[5][11]["bandwidth"] = 100000
+        G[5][11]["bandwidth"] = 10000
 
         G.add_edge(8, 10)
-        G[8][10]["bandwidth"] = 100000
+        G[8][10]["bandwidth"] = 10000
 
         G.add_edge(9, 11)
-        G[9][11]["bandwidth"] = 100000
+        G[9][11]["bandwidth"] = 10000
 
 
 
@@ -240,14 +240,14 @@ class RouteNetTrainer:
         tos_lst = [0, 1, 2]
         nodes = list(G.nodes)
 
-        avg_bw_dist = [1000, 10000, 25000, 50000, 75000, 100000, 200000]
+        # avg_bw_dist = [1000, 10000, 25000, 50000, 75000, 100000, 200000]
 
         with open(traffic_file, "w") as tm_fd:
             for src in G:
                 for dst in G:
                     # avg_bw = random.randint(10, max_avg_lbda)
-                    # avg_bw = 1000
-                    avg_bw = random.choice(avg_bw_dist)
+                    avg_bw = max_avg_lbda
+                    # avg_bw = random.choice(avg_bw_dist)
                     td = random.choice(time_dist)
                     sd = random.choice(pkt_size_dist)
                     # tos = random.choice(tos_lst)
@@ -263,7 +263,7 @@ class RouteNetTrainer:
     def load_topology(self, file):
         return nx.read_gml(file)
 
-    def generate_file(self, num_of_samples, num_of_nodes=12):
+    def generate_file(self, num_of_samples, num_of_nodes=12, avg_bw=15000):
         """
         We generate the files using the previously defined functions. This code will produce 100 samples where:
         - We generate 5 topologies, and then we generate 20 traffic matrices for each
@@ -271,7 +271,7 @@ class RouteNetTrainer:
         - We consider the maximum average bandwidth per flow as 1000
         """
         # for j in range(6, 16):
-        max_avg_lbda = 1000
+        max_avg_lbda = avg_bw
         with open(self.simulation_file, "w") as fd:
             # Generate graph
             # graph_file = os.path.join(self.graphs_path, self.topology_file)
@@ -366,7 +366,7 @@ def train(train_path, final_evaluation=False, ckpt_dir="./modelCheckpoints"):
     if (not os.path.exists(train_path)):
         print(f"ERROR: the provided training path \"{os.path.abspath(train_path)}\" does not exist!", file=stderr)
         return None
-    TEST_PATH = 'training/results/dataset2'  # TODO: make another dataset for validation
+    TEST_PATH = 'training/results/overload_validation'  # TODO: make another dataset for validation
     if (not os.path.exists(TEST_PATH)):
         print("ERROR: Validation dataset not found at the expected location:",
               os.path.abspath(TEST_PATH), file=stderr)
@@ -443,7 +443,7 @@ def train(train_path, final_evaluation=False, ckpt_dir="./modelCheckpoints"):
 
 
 def evaluate(checkpoint):
-    TEST_PATH = 'training/results/dataset2'
+    TEST_PATH = 'training/results/overload_validation'
     if (not os.path.exists(TEST_PATH)):
         print("ERROR: Validation dataset not found at the expected location:",
               os.path.abspath(TEST_PATH), file=stderr)
@@ -526,30 +526,42 @@ def print_graphs(filename, training=False, num_epochs=20, steps_per_epoch=2000, 
     plt.show()
 
 
+def generate_datasets_for_omnet_overload_test():
+    list_of_datasets = ["500_avgBW", "2000_avgBW", "2500_avgBW", "5000_avgBW", "7500_avgBW", "12500_avgBW", "15000_avgBW"]
+    for dataset in list_of_datasets:
+        print("Generating new dataset", dataset, "with value", dataset.split("_")[0])
+        trainer = RouteNetTrainer(dataset, "graph_pre_made.txt")
+        bw_value = int(dataset.split("_")[0])
+        trainer.write_config()
+        trainer.generate_file(1, avg_bw=bw_value)
+        trainer.start_docker()
+        print("Generating DONE")
+
+
 if __name__ == '__main__':
-    # Generate the datasets
+    # # Generate the datasets
     # print("Generating training dataset...")
-    # trainer = RouteNetTrainer("dataset1", "graph_pre_made.txt")
+    # trainer = RouteNetTrainer("overload_train", "graph_pre_made.txt")
     # trainer.write_config()
-    # trainer.generate_file(1000)
+    # trainer.generate_file(15000)
     # trainer.start_docker()
     # print("Generating DONE")
-    #
+
     # print("Generating validation dataset...")
-    # trainer = RouteNetTrainer("dataset2", "graph_pre_made.txt")
+    # trainer = RouteNetTrainer("overload_validation", "graph_pre_made.txt")
     # trainer.write_config()
-    # trainer.generate_file(200)
+    # trainer.generate_file(3000)
     # trainer.start_docker()
     # print("Generating DONE")
     #
     # # Train the model
-    # train("./training/results/dataset1")
+    # train("./training/results/overload_train", ckpt_dir="./overloadCheckpoints")
     # # routenetMain("./training/results/dataset1")
     # print("TRAINING DONE")
 
-    # evaluate('modelCheckpoints/20-0.32')
+    # evaluate('overloadCheckpoints/20-14.32')
     # print("EVALUATE DONE")
-    #
+
     # print_graphs("train_loss_values_mean.txt", training=True, num_epochs=20, steps_per_epoch=2000, valid_steps=20)
     # print_graphs("validate_loss_values_mean.txt")
 
@@ -558,10 +570,14 @@ if __name__ == '__main__':
     # print_graphs("validate_loss_values_mean.txt")
 
 
-    print("Generating new dataset")
-    trainer = RouteNetTrainer("1000_avgBW", "graph_pre_made.txt")
-    trainer.write_config()
-    trainer.generate_file(1)
-    trainer.start_docker()
-    print("Generating DONE")
+    # print("Generating new dataset")
+    # trainer = RouteNetTrainer("1000_avgBW", "graph_pre_made.txt")
+    # trainer.write_config()
+    # trainer.generate_file(1)
+    # trainer.start_docker()
+    # print("Generating DONE")
+
+    print("Starting generating datasets for Omnet overload test...")
+    generate_datasets_for_omnet_overload_test()
+    print("DONE")
 

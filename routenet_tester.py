@@ -142,7 +142,7 @@ def get_delay(loss_object):
     return delays
 
 
-def test_model(checkpoint, number_of_nodes=12):
+def test_model(checkpoint, number_of_nodes=12, dataset_name="dataset2"):
     # data_dir = "training/results/dataset2"
     # ds_test = input_fn(data_dir, shuffle=False)
     # ds_test = ds_test.prefetch(tf.data.experimental.AUTOTUNE)
@@ -216,7 +216,7 @@ def test_model(checkpoint, number_of_nodes=12):
     # print(new_result)
 
 
-    data_dir = "training/results/1000_avgBW"  # TODO: change dataset back to 2
+    data_dir = "training/results/" + dataset_name  # TODO: change dataset back to 2
     ds_test = input_fn(data_dir, shuffle=False)
     ds_test = ds_test.prefetch(tf.data.experimental.AUTOTUNE)
     model = trainer.RouteNet_Fermi()
@@ -284,11 +284,11 @@ def test_model(checkpoint, number_of_nodes=12):
     # # print(np.sum(output2 > output1))
     # # print(output)
 
-def get_mean_delay_from_omnet():
+def get_mean_delay_from_omnet(dataset_name, avg_bw):
     data_folder_name = "training"
-    src_path = f"{data_folder_name}/results/1000_avgBW/"
+    src_path = f"{data_folder_name}/results/" + dataset_name + "/"
     # max_avg_lambda_range = [10, 1000]
-    max_avg_lambda_range = [1000]
+    max_avg_lambda_range = avg_bw
     net_size_lst = [12]
     reader = datanetAPI.DatanetAPI(src_path,max_avg_lambda_range, net_size_lst)
 
@@ -317,56 +317,105 @@ def get_mean_delay_from_omnet():
     # print(final_result)
     return final_result
 
+def test_overload_omnet(list_of_datasets):
+    """
+
+    Parameters
+    ----------
+    list_of_datasets - gets the list in a format of "number_avgBW", where number is the value of the average BW
+
+    Returns
+    -------
+
+    """
+    hi_priority_delays = []  # flow is 1 -> 2
+    regular_priority_delays = []  # flow is 5 -> 2
+    list_of_bw = []
+    for dataset_name in list_of_datasets:
+        print("Current bw:", dataset_name.split("_")[0])
+        bw_value = int(dataset_name.split("_")[0])
+        omnet_delay = get_mean_delay_from_omnet(dataset_name, [bw_value])
+        hi_priority_delays.append(omnet_delay[0][12 * 1 + 2])
+        regular_priority_delays.append(omnet_delay[0][12 * 5 + 2])
+        list_of_bw.append(bw_value)
+
+    fig, ax1 = plt.subplots()
+    ax2 = ax1.twinx()
+    ax2.set_ylim(ax1.get_ylim())
+
+    ax1.plot(list_of_bw, hi_priority_delays, 'b-')
+    ax1.set_xlabel('avg bw values')
+    ax1.set_ylabel('high priority delay', color='b')
+    ax1.tick_params(axis='y', colors='b')
+
+    ax2.plot(list_of_bw, regular_priority_delays, 'r-')
+    ax2.set_ylabel('regular priority delay', color='r')
+    ax2.tick_params(axis='y', colors='r')
+
+    plt.title("delay as a function of bw")
+    plt.show()
+
+    print("HIGH:")
+    print(hi_priority_delays)
+    print("REGULAR:")
+    print(regular_priority_delays)
+
 
 if __name__ == '__main__':
     # test_model('checkpoints/modelCheckpoints_10000samples_good_result/20-0.60')
-    routenet_delay = test_model("modelCheckpoints/20-0.32")
-    omnet_delay = get_mean_delay_from_omnet()
 
-    print("=================")
-    print("Routenet Delay:")
-    print(np.array(routenet_delay))
-    print("=================")
-    print("Omnet Delay:")
-    print(omnet_delay)
 
-    diff_list = []
-    index = 0
-    for delays_list in routenet_delay:
-        for delay in delays_list:
-            diff_list.append(delay - omnet_delay[0][index])
-            index += 1
+    # routenet_delay = test_model("overloadCheckpoints/20-14.32", dataset_name="10000_avgBW")
+    # omnet_delay = get_mean_delay_from_omnet("10000_avgBW", [10000])
+    #
+    # print("=================")
+    # print("Routenet Delay:")
+    # print(np.array(routenet_delay))
+    # print("=================")
+    # print("Omnet Delay:")
+    # print(omnet_delay)
+    #
+    # diff_list = []
+    # index = 0
+    # for delays_list in routenet_delay:
+    #     for delay in delays_list:
+    #         diff_list.append(delay - omnet_delay[0][index])
+    #         index += 1
+    #
+    # print("=================")
+    # print("Diff list is:")
+    # print(diff_list)
+    # print("=================")
+    # print("AVG diff is:")
+    # print(np.average(np.abs(diff_list)))
+    # routenet_delay = np.array(routenet_delay)
+    # omnet_delay = omnet_delay[0].reshape(12, 12)
+    # fig = plt.figure()
+    # ax = fig.add_subplot(projection='3d')
+    #
+    # # omnet = np.array([[0,1,2,3],[3,0,2,1],[2,3,0,1],[1,3,2,0]])
+    # # routnet = np.array([[0,1.1,2.2,3.3],[3.1,0,2.2,1.3],[2.4,3.5,0,1.2],[1.1,3.2,2.3,0]])*0.0001
+    # colors = ['r', 'b']
+    #
+    # yticks = [11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0]
+    # xticks = list(reversed(yticks))
+    # xs = np.array([0,1,2,3,4,5,6,7,8,9,10,11])
+    # ys = [0,1,2,3,4,5,6,7,8,9,10,11]
+    # width = 0.25
+    #
+    # for i in range(len(omnet_delay)):
+    #     ax.bar(xs, omnet_delay[i], zs=i, zdir='y', color='r', alpha=1, width=width)
+    #     ax.bar(xs+width, routenet_delay[i], zs=i, zdir='y', color='b', alpha=0.8, width=width)
+    #
+    # ax.set_yticks(yticks)
+    # ax.set_xticks(xticks)
+    #
+    # ax.set_xlabel('src')
+    # ax.set_ylabel('dst')
+    # ax.set_zlabel('delay')
+    # plt.show()
 
-    print("=================")
-    print("Diff list is:")
-    print(diff_list)
-    print("=================")
-    print("AVG diff is:")
-    print(np.average(np.abs(diff_list)))
-    routenet_delay = np.array(routenet_delay)
-    omnet_delay = omnet_delay[0].reshape(12, 12)
-    fig = plt.figure()
-    ax = fig.add_subplot(projection='3d')
-
-    # omnet = np.array([[0,1,2,3],[3,0,2,1],[2,3,0,1],[1,3,2,0]])
-    # routnet = np.array([[0,1.1,2.2,3.3],[3.1,0,2.2,1.3],[2.4,3.5,0,1.2],[1.1,3.2,2.3,0]])*0.0001
-    colors = ['r', 'b']
-
-    yticks = [11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0]
-    xticks = list(reversed(yticks))
-    xs = np.array([0,1,2,3,4,5,6,7,8,9,10,11])
-    ys = [0,1,2,3,4,5,6,7,8,9,10,11]
-    width = 0.25
-
-    for i in range(len(omnet_delay)):
-        ax.bar(xs, omnet_delay[i], zs=i, zdir='y', color='r', alpha=1, width=width)
-        ax.bar(xs+width, routenet_delay[i], zs=i, zdir='y', color='b', alpha=0.8, width=width)
-
-    ax.set_yticks(yticks)
-    ax.set_xticks(xticks)
-
-    ax.set_xlabel('src')
-    ax.set_ylabel('dst')
-    ax.set_zlabel('delay')
-    plt.show()
+    print("Staring the Omnet Overload Test")
+    test_overload_omnet(["500_avgBW", "1000_avgBW", "2000_avgBW", "2500_avgBW", "5000_avgBW", "7500_avgBW", "10000_avgBW", "15000_avgBW"])
+    print("DONE")
 
