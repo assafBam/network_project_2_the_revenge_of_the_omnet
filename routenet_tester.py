@@ -298,6 +298,15 @@ def get_mean_delay_from_omnet(dataset_name, avg_bw):
     print("Number of selected samples: ", len(samples_lst))
 
     delays_lst = []
+    packets_sent_list = []
+    packets_lost_list = []
+    # pkts_drop_dict = {}
+    # for i in range(net_size_lst[0]):
+    #     pkts_drop_dict[i] = {}
+    #     for j in range(net_size_lst[0]):
+    #         pkts_drop_dict[i][j] = []
+
+    # print(pkts_drop_list)
     for s in samples_lst:
         performance_matrix = s.get_performance_matrix()
         delays_lst_per_sample = []
@@ -306,18 +315,27 @@ def get_mean_delay_from_omnet(dataset_name, avg_bw):
                 if (i == j):
                     # continue
                     delays_lst_per_sample.append(0)
+                    # pkts_drop_dict[i][j].append(0)
                 else:
                     # Append to the list the average delay of the path i,j.
                     delays_lst_per_sample.append(performance_matrix[i, j]["AggInfo"]["AvgDelay"])
+                    # print(performance_matrix[i, j]["AggInfo"]["PktsDrop"])
+
+                    # pkts_drop_dict[i][j].append(performance_matrix[i, j]["AggInfo"]["PktsDrop"])
         delays_lst.append([np.array(delays_lst_per_sample)])
+        packets_sent_list.append(s.get_global_packets())
+        packets_lost_list.append(s.get_global_losses())
         # print(delays_lst_per_sample)
 
-    final_result = np.median(delays_lst, axis=0)
+    final_result_delays = np.median(delays_lst, axis=0)
+    final_result_packets_sent = np.median(packets_sent_list, axis=0)
+    final_result_packets_lost = np.median(packets_lost_list, axis=0)
+    # final_result_pkts_drop = np.median(pkts_drop_list, axis=0)
     # print("===== Final result is =====")
     # print(final_result)
-    return final_result
+    return final_result_delays, final_result_packets_sent, final_result_packets_lost
 
-def test_overload_omnet(list_of_datasets):
+def test_overload_omnet(list_of_datasets, num_of_samples):
     """
 
     Parameters
@@ -330,42 +348,120 @@ def test_overload_omnet(list_of_datasets):
     """
     hi_priority_delays = []  # flow is 1 -> 2
     regular_priority_delays = []  # flow is 5 -> 2
+    regular_priority_non_affected_delays = []  # flow is 2 -> 5
+    small_flow = []  # flow is 9 -> 11
     list_of_bw = []
+    packet_loss_percentage = []
+    high_pri_index = 12 * 1 + 2
+    reg_pri_index = 12 * 5 + 2
+    reg_pri_non_affected_index = 12 * 2 + 5
+    small_index = 12 * 9 + 11
     for dataset_name in list_of_datasets:
         print("Current bw:", dataset_name.split("_")[0])
         bw_value = int(dataset_name.split("_")[0])
-        omnet_delay = get_mean_delay_from_omnet(dataset_name, [bw_value])
-        hi_priority_delays.append(omnet_delay[0][12 * 1 + 2])
-        regular_priority_delays.append(omnet_delay[0][12 * 5 + 2])
+        omnet_delay, sent, lost = get_mean_delay_from_omnet(dataset_name + "_" + str(num_of_samples) + "_samples", [bw_value])
+        # hi_pri_current = []
+        # regular_pri_current = []
+        # for current_sample in omnet_delay:
+        #     print("Current omnet results for sample", current_sample)
+        #     print(current_sample)
+        #     hi_pri_current.append(current_sample[high_pri_index])
+        #     regular_pri_current.append(current_sample[reg_pri_index])
+        print(omnet_delay[0])
+        hi_priority_delays.append(omnet_delay[0][high_pri_index])
+        regular_priority_delays.append(omnet_delay[0][reg_pri_index])
+        regular_priority_non_affected_delays.append(omnet_delay[0][reg_pri_non_affected_index])
+        small_flow.append(omnet_delay[0][small_index])
         list_of_bw.append(bw_value)
+        packet_loss_percentage.append((lost / sent) * 100)
 
     fig, ax1 = plt.subplots()
-    ax2 = ax1.twinx()
-    ax2.set_ylim(ax1.get_ylim())
+    # ax2 = ax1.twinx()
+    ax3 = ax1.twinx()
+    # ax2.set_ylim(ax1.get_ylim())
+
 
     ax1.plot(list_of_bw, hi_priority_delays, 'b-')
     ax1.set_xlabel('avg bw values')
     ax1.set_ylabel('high priority delay', color='b')
     ax1.tick_params(axis='y', colors='b')
 
-    ax2.plot(list_of_bw, regular_priority_delays, 'r-')
-    ax2.set_ylabel('regular priority delay', color='r')
-    ax2.tick_params(axis='y', colors='r')
+    # ax2.plot(list_of_bw, regular_priority_delays, 'r-')
+    # ax2.set_ylabel('regular priority delay affected by high priority', color='r')
+    # ax2.tick_params(axis='y', colors='r')
+    #
+    ax3.plot(list_of_bw, regular_priority_non_affected_delays, 'g-')
+    ax3.set_ylabel('regular flow non affected by high priority', color='g')
+    ax3.tick_params(axis='y', colors='g')
 
-    plt.title("delay as a function of bw")
+    # plt.title("avg delay as a function of bw")
+    # plt.show()
+
+    fig, ax4 = plt.subplots()
+    ax4.plot(list_of_bw, small_flow, 'g-')
+    ax4.set_xlabel('avg bw values')
+    ax4.set_ylabel('small flow delay', color='g')
+    ax4.tick_params(axis='y', colors='g')
+
+    plt.title("avg delay as a function of bw")
     plt.show()
 
     print("HIGH:")
     print(hi_priority_delays)
-    print("REGULAR:")
+    print("REGULAR AFFECTED:")
     print(regular_priority_delays)
+    print("REGULAR NON AFFECTED:")
+    print(regular_priority_non_affected_delays)
+    print("SMALL")
+    print(small_flow)
+
+
+def test_singular_flow_omnet(src, dst, num_of_samples):
+    list_of_datasets = ["500_avgBW", "1000_avgBW", "2000_avgBW", "2500_avgBW", "5000_avgBW", "7500_avgBW",
+                        "10000_avgBW", "12500_avgBW", "15000_avgBW", "17500_avgBW", "20000_avgBW", "25000_avgBW",
+                        "30000_avgBW", "32500_avgBW", "35000_avgBW", "37500_avgBW", "40000_avgBW", "50000_avgBW",
+                          "75000_avgBW", "100000_avgBW", "1000000_avgBW", "3000000_avgBW", "5000000_avgBW", "7000000_avgBW"]
+    delays = []
+    list_of_bw = []
+    # pkts_drop_perc = []
+    packet_loss_percentage = []
+
+    for dataset_name in list_of_datasets:
+        print("Current bw:", dataset_name.split("_")[0])
+        bw_value = int(dataset_name.split("_")[0])
+        omnet_delay, sent, lost = get_mean_delay_from_omnet(dataset_name + "_" + str(num_of_samples) + "_samples", [bw_value])
+        print(omnet_delay[0])
+        # print(pkts_drop)
+        delays.append(omnet_delay[0][src * 12 + dst])
+        list_of_bw.append(bw_value)
+        # pkts_drop_perc.append(np.mean(pkts_drop[src][dst]))
+        packet_loss_percentage.append((lost / sent) * 100)
+
+    fig, ax1 = plt.subplots()
+    ax2 = ax1.twinx()
+    ax1.plot(list_of_bw, delays, 'b-')
+    ax1.set_xlabel('avg bw values')
+    ax1.set_ylabel('delay from src ' + str(src) + " to dst " + str(dst), color='b')
+    ax1.tick_params(axis='y', colors='b')
+
+    ax2.plot(list_of_bw, packet_loss_percentage, 'g-')
+    ax2.set_ylabel('packet loss percentage', color='g')
+    ax2.tick_params(axis='y', colors='g')
+
+    plt.title("avg delay as a function of bw")
+    plt.show()
+
+    print("list of delays:")
+    print(delays)
+    print("loss percentage:")
+    print(packet_loss_percentage)
 
 
 if __name__ == '__main__':
     # test_model('checkpoints/modelCheckpoints_10000samples_good_result/20-0.60')
 
 
-    # routenet_delay = test_model("overloadCheckpoints/20-14.32", dataset_name="10000_avgBW")
+    # routenet_delay = test_model("overloadCheckpoints_100_epochs/100-12.02", dataset_name="10000_avgBW")
     # omnet_delay = get_mean_delay_from_omnet("10000_avgBW", [10000])
     #
     # print("=================")
@@ -416,6 +512,13 @@ if __name__ == '__main__':
     # plt.show()
 
     print("Staring the Omnet Overload Test")
-    test_overload_omnet(["500_avgBW", "1000_avgBW", "2000_avgBW", "2500_avgBW", "5000_avgBW", "7500_avgBW", "10000_avgBW", "15000_avgBW"])
+    # test_overload_omnet(["500_avgBW", "1000_avgBW", "2000_avgBW", "2500_avgBW", "5000_avgBW", "7500_avgBW",
+    #                     "10000_avgBW", "12500_avgBW", "15000_avgBW", "17500_avgBW", "20000_avgBW", "25000_avgBW",
+    #                      "30000_avgBW", "32500_avgBW", "35000_avgBW", "37500_avgBW", "40000_avgBW", "50000_avgBW",
+    #                      "75000_avgBW", "100000_avgBW", "1000000_avgBW", "3000000_avgBW", "5000000_avgBW", "7000000_avgBW"], 15)
+    test_singular_flow_omnet(1, 2, 15)
+    test_singular_flow_omnet(5, 2, 15)
+    # test_singular_flow_omnet(2, 5, 15)
+    test_singular_flow_omnet(9, 11, 15)
     print("DONE")
 

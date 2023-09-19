@@ -224,7 +224,7 @@ class RouteNetTrainer:
     - We consider two packages distributions, chosen at random
     - ToS is assigned randomly
     '''
-    def generate_tm(self, G, max_avg_lbda, traffic_file):
+    def generate_tm(self, G, max_avg_lbda, traffic_file, src_dst=[]):
         poisson = "0"
         cbr = "1"
         on_off = "2,10,5"  # time_distribution, avg off_time exp, avg on_time exp
@@ -243,27 +243,45 @@ class RouteNetTrainer:
         # avg_bw_dist = [1000, 10000, 25000, 50000, 75000, 100000, 200000]
 
         with open(traffic_file, "w") as tm_fd:
-            for src in G:
-                for dst in G:
-                    # avg_bw = random.randint(10, max_avg_lbda)
-                    avg_bw = max_avg_lbda
-                    # avg_bw = random.choice(avg_bw_dist)
-                    td = random.choice(time_dist)
-                    sd = random.choice(pkt_size_dist)
-                    # tos = random.choice(tos_lst)
-                    # set the tos to be 0 only if node number 1 is sending data to node number 2 (given this flow priority)
-                    if src == nodes[1] and dst == nodes[2]:
-                        tos = 0
-                    else:
-                        tos = 1
-                    traffic_line = "{},{},{},{},{},{}".format(
-                        src, dst, avg_bw, td, sd, tos)
-                    tm_fd.write(traffic_line + "\n")
+            if not src_dst:
+                for src in G:
+                    for dst in G:
+                        # avg_bw = random.randint(10, max_avg_lbda)
+                        avg_bw = max_avg_lbda
+                        # avg_bw = random.choice(avg_bw_dist)
+                        td = random.choice(time_dist)
+                        sd = random.choice(pkt_size_dist)
+                        # tos = random.choice(tos_lst)
+                        # set the tos to be 0 only if node number 1 is sending data to node number 2 (given this flow priority)
+                        if src == nodes[1] and dst == nodes[2]:
+                            tos = 0
+                        else:
+                            tos = 1
+                        traffic_line = "{},{},{},{},{},{}".format(
+                            src, dst, avg_bw, td, sd, tos)
+                        tm_fd.write(traffic_line + "\n")
+            else:
+                src, dst = src_dst
+                # avg_bw = random.randint(10, max_avg_lbda)
+                avg_bw = max_avg_lbda
+                # avg_bw = random.choice(avg_bw_dist)
+                td = random.choice(time_dist)
+                sd = random.choice(pkt_size_dist)
+                # tos = random.choice(tos_lst)
+                # set the tos to be 0 only if node number 1 is sending data to node number 2 (given this flow priority)
+                if src == nodes[1] and dst == nodes[2]:
+                    tos = 0
+                else:
+                    tos = 1
+                traffic_line = "{},{},{},{},{},{}".format(
+                    src, dst, avg_bw, td, sd, tos)
+                tm_fd.write(traffic_line + "\n")
+
 
     def load_topology(self, file):
         return nx.read_gml(file)
 
-    def generate_file(self, num_of_samples, num_of_nodes=12, avg_bw=15000):
+    def generate_file(self, num_of_samples, num_of_nodes=12, avg_bw=15000, src_dst=[]):
         """
         We generate the files using the previously defined functions. This code will produce 100 samples where:
         - We generate 5 topologies, and then we generate 20 traffic matrices for each
@@ -286,7 +304,7 @@ class RouteNetTrainer:
             # Generate TM:
             for i in range(num_of_samples):
                 tm_file = os.path.join(self.tm_path, "tm_{}_{}.txt".format(num_of_nodes, i))
-                self.generate_tm(G, max_avg_lbda, os.path.join(self.training_dataset_path, tm_file))
+                self.generate_tm(G, max_avg_lbda, os.path.join(self.training_dataset_path, tm_file), src_dst=src_dst)
                 sim_line = "{},{},{}\n".format(graph_file, routing_file, tm_file)
                 # If dataset has been generated in windows, convert paths into linux format
                 fd.write(sim_line.replace("\\", "/"))
@@ -421,21 +439,21 @@ def train(train_path, final_evaluation=False, ckpt_dir="./modelCheckpoints"):
         save_freq='epoch')
     tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=LOG_PATH, histogram_freq=1)
 
+    # model.fit(ds_train,
+    #           epochs=20,
+    #           steps_per_epoch=2000,
+    #           validation_data=ds_test,
+    #           validation_steps=20,
+    #           callbacks=[cp_callback, tensorboard_callback],
+    #           use_multiprocessing=True)
+
     model.fit(ds_train,
-              epochs=20,
+              epochs=100,
               steps_per_epoch=2000,
               validation_data=ds_test,
               validation_steps=20,
               callbacks=[cp_callback, tensorboard_callback],
               use_multiprocessing=True)
-
-    # model.fit(ds_train,
-    #           epochs=90,
-    #           steps_per_epoch=4000,
-    #           validation_data=ds_test,
-    #           validation_steps=40,
-    #           callbacks=[cp_callback, tensorboard_callback],
-    #           use_multiprocessing=True)
 
     if final_evaluation:
         print("Final evaluation:")
@@ -526,14 +544,34 @@ def print_graphs(filename, training=False, num_epochs=20, steps_per_epoch=2000, 
     plt.show()
 
 
-def generate_datasets_for_omnet_overload_test():
-    list_of_datasets = ["500_avgBW", "2000_avgBW", "2500_avgBW", "5000_avgBW", "7500_avgBW", "12500_avgBW", "15000_avgBW"]
+def generate_datasets_for_omnet_overload_test(num_of_samples):
+    # list_of_datasets = ["500_avgBW", "1000_avgBW", "2000_avgBW", "2500_avgBW", "5000_avgBW", "7500_avgBW",
+    #                     "10000_avgBW", "12500_avgBW", "15000_avgBW", "17500_avgBW", "20000_avgBW", "25000_avgBW",
+    #                     "30000_avgBW", "32500_avgBW", "35000_avgBW", "37500_avgBW", "40000_avgBW", "50000_avgBW",
+    #                     "75000_avgBW", "100000_avgBW", "1000000_avgBW", "3000000_avgBW", "5000000_avgBW", "7000000_avgBW", "10000000_avgBW"]
+
+    list_of_datasets = ["1000000_avgBW", "3000000_avgBW", "5000000_avgBW", "7000000_avgBW", "10000000_avgBW"]
+
     for dataset in list_of_datasets:
-        print("Generating new dataset", dataset, "with value", dataset.split("_")[0])
-        trainer = RouteNetTrainer(dataset, "graph_pre_made.txt")
+        print("Generating new dataset", dataset)
+        trainer = RouteNetTrainer(dataset + "_" + str(num_of_samples) + "_samples", "graph_pre_made.txt")
         bw_value = int(dataset.split("_")[0])
         trainer.write_config()
-        trainer.generate_file(1, avg_bw=bw_value)
+        trainer.generate_file(num_of_samples, avg_bw=bw_value)
+        trainer.start_docker()
+        print("Generating DONE")
+
+def generate_singular_datasets_for_omnet_overload_test(src, dst, num_of_samples):
+    list_of_datasets = ["500_avgBW", "1000_avgBW", "2000_avgBW", "2500_avgBW", "5000_avgBW", "7500_avgBW",
+                         "10000_avgBW", "12500_avgBW", "15000_avgBW", "17500_avgBW", "20000_avgBW", "25000_avgBW",
+                        "30000_avgBW", "32500_avgBW", "35000_avgBW", "37500_avgBW", "40000_avgBW"]
+
+    for dataset in list_of_datasets:
+        print("Generating new dataset", dataset)
+        trainer = RouteNetTrainer(dataset + "_" + str(num_of_samples) + "_samples_" + str(src) + "_" + str(dst), "graph_pre_made.txt")
+        bw_value = int(dataset.split("_")[0])
+        trainer.write_config()
+        trainer.generate_file(num_of_samples, avg_bw=bw_value, src_dst=[src, dst])
         trainer.start_docker()
         print("Generating DONE")
 
@@ -554,15 +592,15 @@ if __name__ == '__main__':
     # trainer.start_docker()
     # print("Generating DONE")
     #
-    # # Train the model
-    # train("./training/results/overload_train", ckpt_dir="./overloadCheckpoints")
+    # Train the model
+    # train("./training/results/overload_train", ckpt_dir="./overloadCheckpoints_100_epochs")
     # # routenetMain("./training/results/dataset1")
     # print("TRAINING DONE")
 
-    # evaluate('overloadCheckpoints/20-14.32')
+    # evaluate('overloadCheckpoints_100_epochs/100-12.02')
     # print("EVALUATE DONE")
 
-    # print_graphs("train_loss_values_mean.txt", training=True, num_epochs=20, steps_per_epoch=2000, valid_steps=20)
+    # print_graphs("train_loss_values_mean.txt", training=True, num_epochs=100, steps_per_epoch=2000, valid_steps=20)
     # print_graphs("validate_loss_values_mean.txt")
 
     # evaluate("modelCheckpoints_10000samples_longTraining/90-80.72")
@@ -578,6 +616,10 @@ if __name__ == '__main__':
     # print("Generating DONE")
 
     print("Starting generating datasets for Omnet overload test...")
-    generate_datasets_for_omnet_overload_test()
+    # generate_datasets_for_omnet_overload_test(15)
+    # generate_singular_datasets_for_omnet_overload_test(1, 2, 15)
+    # generate_singular_datasets_for_omnet_overload_test(5, 2, 15)
+    # generate_singular_datasets_for_omnet_overload_test(2, 5, 15)
+    generate_singular_datasets_for_omnet_overload_test(9, 11, 15)
     print("DONE")
 
