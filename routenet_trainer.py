@@ -86,7 +86,8 @@ class RouteNetTrainer:
             # Assign weights to each queue
             # G.nodes[n]["schedulingWeights"] = "60, 40"
             # Assign the buffer size of all the ports of the node
-            G.nodes[n]["bufferSizes"] = 8000
+            # G.nodes[n]["bufferSizes"] = 8000
+            G.nodes[n]["bufferSizes"] = 64000
 
         G.add_edge(0, 3)
         G[0][3]["bandwidth"] = 10000
@@ -545,16 +546,16 @@ def print_graphs(filename, training=False, num_epochs=20, steps_per_epoch=2000, 
 
 
 def generate_datasets_for_omnet_overload_test(num_of_samples):
-    # list_of_datasets = ["500_avgBW", "1000_avgBW", "2000_avgBW", "2500_avgBW", "5000_avgBW", "7500_avgBW",
-    #                     "10000_avgBW", "12500_avgBW", "15000_avgBW", "17500_avgBW", "20000_avgBW", "25000_avgBW",
-    #                     "30000_avgBW", "32500_avgBW", "35000_avgBW", "37500_avgBW", "40000_avgBW", "50000_avgBW",
-    #                     "75000_avgBW", "100000_avgBW", "1000000_avgBW", "3000000_avgBW", "5000000_avgBW", "7000000_avgBW", "10000000_avgBW"]
+    list_of_datasets = ["500_avgBW", "1000_avgBW", "2000_avgBW", "2500_avgBW", "5000_avgBW", "7500_avgBW",
+                        "10000_avgBW", "12500_avgBW", "15000_avgBW", "17500_avgBW", "20000_avgBW", "25000_avgBW"]
 
-    list_of_datasets = ["1000000_avgBW", "3000000_avgBW", "5000000_avgBW", "7000000_avgBW", "10000000_avgBW"]
+    # list_of_datasets = ["30000_avgBW", "32500_avgBW", "35000_avgBW", "37500_avgBW", "40000_avgBW", "50000_avgBW",
+    #                         "75000_avgBW", "100000_avgBW", "1000000_avgBW", "3000000_avgBW", "5000000_avgBW", "7000000_avgBW", "10000000_avgBW",
+    #                         "1000000_avgBW", "3000000_avgBW", "5000000_avgBW", "7000000_avgBW", "10000000_avgBW"]
 
     for dataset in list_of_datasets:
         print("Generating new dataset", dataset)
-        trainer = RouteNetTrainer(dataset + "_" + str(num_of_samples) + "_samples", "graph_pre_made.txt")
+        trainer = RouteNetTrainer(dataset + "_" + str(num_of_samples) + "_samples_max_buffer_size", "graph_pre_made.txt")
         bw_value = int(dataset.split("_")[0])
         trainer.write_config()
         trainer.generate_file(num_of_samples, avg_bw=bw_value)
@@ -563,7 +564,7 @@ def generate_datasets_for_omnet_overload_test(num_of_samples):
 
 def generate_singular_datasets_for_omnet_overload_test(src, dst, num_of_samples):
     list_of_datasets = ["500_avgBW", "1000_avgBW", "2000_avgBW", "2500_avgBW", "5000_avgBW", "7500_avgBW",
-                         "10000_avgBW", "12500_avgBW", "15000_avgBW", "17500_avgBW", "20000_avgBW", "25000_avgBW",
+                        "10000_avgBW", "12500_avgBW", "15000_avgBW", "17500_avgBW", "20000_avgBW", "25000_avgBW",
                         "30000_avgBW", "32500_avgBW", "35000_avgBW", "37500_avgBW", "40000_avgBW"]
 
     for dataset in list_of_datasets:
@@ -616,10 +617,10 @@ if __name__ == '__main__':
     # print("Generating DONE")
 
     print("Starting generating datasets for Omnet overload test...")
-    # generate_datasets_for_omnet_overload_test(15)
+    generate_datasets_for_omnet_overload_test(15)
     # generate_singular_datasets_for_omnet_overload_test(1, 2, 15)
     # generate_singular_datasets_for_omnet_overload_test(5, 2, 15)
     # generate_singular_datasets_for_omnet_overload_test(2, 5, 15)
-    generate_singular_datasets_for_omnet_overload_test(9, 11, 15)
+    # generate_singular_datasets_for_omnet_overload_test(9, 11, 15)
     print("DONE")
 

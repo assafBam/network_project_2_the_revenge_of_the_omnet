@@ -1,0 +1,4 @@
+dataset_name: 500_avgBW_15_samples_9_11
+rm_prev_results: y
+samples_per_file: 10
+threads: 6
